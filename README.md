@@ -8,10 +8,10 @@ Weights are distributed on Hugging Face: [`ZehongZhu/drivinggfm`](https://huggin
 
 ```
 .
-├── pipeline_drivinggfm.py   # DrivinggfmPipeline — the pipeline implementation (main entry point)
-├── infer.py                 # command-line inference example
+├── pipeline_drivinggfm.py  
+├── infer.py                
 ├── requirements.txt
-└── LICENSE                  # CreativeML Open RAIL-M
+└── LICENSE                  
 ```
 
 ## Installation
