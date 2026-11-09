@@ -110,6 +110,6 @@ Weights and code are distributed under **CreativeML Open RAIL-M**; the full text
   title  = {DrivingGFM: Generalist Foundation Model for Unified Driving Visual Perception},
   author = {DrivingGFM Team, Tongji University},
   year   = {2026},
-  note   = {Model v1.0.0}
+  note   = {Model v1.0}
 }
 ```
