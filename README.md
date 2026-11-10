@@ -120,7 +120,7 @@ python scripts/run_all.py                # stages 1-5 in order
 python -m unittest discover -s tests     # 39 tests, no GPU, no network, no key
 ```
 
-Stage 1 talks to any OpenAI-compatible endpoint — it speaks the chat-completions protocol over `urllib`, so no vendor SDK is installed:
+Stage 1 talks to any OpenAI-compatible endpoint — it speaks the chat-completions protocol over `urllib`, so no vendor SDK is required:
 
 ```bash
 export DRIVINGGFM_LLM_BASE_URL=https://api.deepseek.com/v1
