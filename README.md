@@ -89,7 +89,7 @@ python infer.py --image scene.png --prompt "..." --device cuda --dtype float16 -
 
 ## Dataset construction
 
-The 80,000 paired samples the checkpoint was instruction-tuned on are produced by the code in this repository. Nothing here ships images or captions — it ships the procedure, the prompts, the thresholds and the acceptance criteria, so the dataset can be regenerated or audited sample by sample. The full specification is in [`docs/DATASET.md`](docs/DATASET.md).
+The repository carries the procedure, the prompts, the thresholds and the acceptance criteria; the samples themselves are produced by running it, so any subset can be regenerated and audited one by one, with the full specification in [`docs/DATASET.md`](docs/DATASET.md).
 
 Quotas follow Table I of the manuscript:
 
