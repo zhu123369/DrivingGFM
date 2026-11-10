@@ -1,0 +1,327 @@
+version: "1.0"
+model: "deepseek-r1"
+output_schema: |
+  {
+    "pairs": [
+      {
+        "task": "<task id from the prompt>",
+        "subtask": "<free-form sub-label, e.g. 'speed limit sign' or 'night rain'>",
+        "source_caption": "<caption of the frame before editing>",
+        "instruction": "<one imperative sentence telling the editor what to change>",
+        "edited_caption": "<caption of the frame after editing>",
+        "edited_region": "<where in the frame the edit happens, using frame-relative wording>",
+        "edit_type": "word_swap | refine | region"
+      }
+    ]
+  }
+
+system: |
+  You are a data annotator for an autonomous-driving perception dataset. You
+  write short, factual descriptions of a single dashcam frame and the edit that
+  transforms it into a second frame.
+
+  Hard rules:
+  1. A caption describes exactly one frame. Use present tense, third person, no
+     speculation, no advice, no first-person voice.
+  2. The edit must be local and reversible in words: one element changes, the
+     rest of the scene description stays verbatim identical. Do not reword
+     unrelated parts of the caption.
+  3. The instruction is one imperative sentence, at most 20 words, naming the
+     target element and where it sits in the frame. Never chain two edits
+     ("and also", "then").
+  4. Only physical, visible properties may be edited: colour, presence,
+     position, material state, weather, illumination, sharpness. Never edit
+     traffic-light aspects, never delete vulnerable road users, never add text,
+     watermarks, logos or UI overlays.
+  5. Wording must be plausible for a real road scene. Do not invent brands,
+     licence-plate strings, exact place names, or measured values that a caption
+     could not know.
+  6. Traffic signs follow the convention of the country named in the seed
+     caption; if none is named, use generic wording ("a circular speed limit
+     sign reading 60").
+  7. Output valid JSON only, matching the schema exactly. No prose before or
+     after the JSON. Do not wrap the JSON in code fences.
+
+  Diversity rules:
+  - Spread the batch over the supplied variety axes; do not repeat the same
+    road type, weather, time of day or object instance twice in one batch.
+  - Vary sentence openings. Do not start more than two captions in a batch with
+    the same three words.
+  - Vary object counts (1, 2, several) and distances (near, 30 m ahead, at the
+    intersection).
+
+  Self-check before answering, silently:
+  - Does the edited caption differ from the source caption in exactly the
+    element named by the instruction, and nowhere else?
+  - Would a human annotator be able to point at the region in the frame?
+  - Does the instruction violate any hard rule above?
+  If any answer is no, fix the triple or replace it.
+
+task_templates:
+
+  detection_sign:
+    instruction: |
+      Task: traffic-sign detection pairs.
+
+      Produce {count} triples. In each triple the instruction asks for a
+      traffic sign to be made explicit, so that the sign becomes the salient
+      target of the edited frame while the road layout is unchanged.
+
+      Allowed edit verbs: "mark ... in <colour>", "highlight ... in <colour>",
+      "outline ... with a <colour> border", "draw a <colour> box around ...",
+      "recolour ... to <colour>".
+
+      Sign vocabulary to rotate through: speed limit, stop, yield, no entry,
+      mandatory direction, warning (curve, slippery, pedestrian crossing),
+      construction, school zone, weight limit.
+
+      edited_region must be frame-relative, e.g. "upper right third of the
+      frame, above the right-hand lane".
+
+      Variety axes to sample: {axes}
+      Seed captions to paraphrase or extend: {seeds}
+
+      Batch index: {batch}.
+
+  detection_lane:
+    instruction: |
+      Task: lane-marking detection pairs.
+
+      Produce {count} triples. The instruction makes the lane geometry explicit
+      by marking, recolouring or outlining lane boundary markings, edge lines,
+      centre lines, dashed dividers or crosswalks, without touching vehicles,
+      weather or illumination.
+
+      Allowed edit verbs: "mark ... in <colour>", "highlight ... in <colour>",
+      "outline ... with a <colour> border", "recolour ... to <colour>".
+
+      State the lane configuration in the source caption (number of lanes,
+      direction of travel, dashed or solid), because the lane topology is what
+      the edit is grounding.
+
+      Variety axes to sample: {axes}
+      Seed captions to paraphrase or extend: {seeds}
+
+      Batch index: {batch}.
+
+  detection_vehicle:
+    instruction: |
+      Task: vehicle detection pairs.
+
+      Produce {count} triples. The instruction marks or outlines one vehicle
+      (car, truck, bus, van, motorcycle, cyclist), leaving other vehicles and the
+      scene description untouched. Never target more than one vehicle, and never
+      ask to remove a vehicle in this task.
+
+      Allowed edit verbs: "mark ... in <colour>", "highlight ... in <colour>",
+      "outline ... with a <colour> border", "recolour ... to <colour>".
+
+      edited_region must place the vehicle relative to the frame and the lane,
+      e.g. "left lane, about 25 m ahead, centre-left of the frame".
+
+      Variety axes to sample: {axes}
+      Seed captions to paraphrase or extend: {seeds}
+
+      Batch index: {batch}.
+
+  detection_pedestrian:
+    instruction: |
+      Task: pedestrian detection pairs.
+
+      Produce {count} triples. The instruction marks or outlines one pedestrian
+      or one pedestrian group; the target is a road user whose presence must be
+      preserved by the edit. Never ask to remove a pedestrian.
+
+      Allowed edit verbs: "mark ... in <colour>", "highlight ... in <colour>",
+      "outline ... with a <colour> border".
+
+      edited_region must state where the pedestrian stands relative to the
+      roadway and the frame, e.g. "right kerb, waiting to cross, lower right of
+      the frame".
+
+      Variety axes to sample: {axes}
+      Seed captions to paraphrase or extend: {seeds}
+
+      Batch index: {batch}.
+
+  enhancement_rainy:
+    instruction: |
+      Task: rainy-condition image-enhancement pairs.
+
+      Produce {count} triples. The source caption describes a frame degraded by
+      rain; the instruction asks to remove the rain effect and recover a clear
+      frame under the same geometry; the edited caption states the recovered
+      condition. Geometry, objects, lane layout and viewpoint must not change.
+
+      Allowed edit verbs: "remove the rain ...", "clear the rain ...", "make it a
+      rain-free ...". Add the artefact to remove: streak, veil, road spray,
+      wiper blur, reflections on the road surface.
+
+      edited_region: "across the whole frame" is acceptable here, because the
+      degradation is global.
+
+      Variety axes to sample: {axes}
+      Seed captions to paraphrase or extend: {seeds}
+
+      Batch index: {batch}.
+
+  enhancement_snowy:
+    instruction: |
+      Task: snowy-condition image-enhancement pairs.
+
+      Produce {count} triples. The source caption describes a frame with snow
+      falling, snow accumulation or reduced contrast from winter weather; the
+      instruction removes the snow effect; the edited caption states the
+      recovered condition. Geometry and objects are preserved.
+
+      Allowed edit verbs: "remove the snow ...", "clear the snow ...", "make it
+      a snow-free ...". Name the artefact: falling flakes, snow on the
+      windscreen, slush on the road, reduced contrast from white-out.
+
+      Variety axes to sample: {axes}
+      Seed captions to paraphrase or extend: {seeds}
+
+      Batch index: {batch}.
+
+  enhancement_foggy:
+    instruction: |
+      Task: foggy-condition image-enhancement pairs.
+
+      Produce {count} triples. The source caption describes a frame degraded by
+      fog, mist or haze; the instruction removes the scattering veil; the edited
+      caption states the recovered condition. Geometry and objects are preserved.
+
+      Allowed edit verbs: "remove the fog ...", "clear the haze ...", "make it a
+      fog-free ...". Name the artefact: grey veil, lost contrast in the distance,
+      haloed headlights, misted windscreen.
+
+      Variety axes to sample: {axes}
+      Seed captions to paraphrase or extend: {seeds}
+
+      Batch index: {batch}.
+
+  enhancement_lowlight:
+    instruction: |
+      Task: low-light image-enhancement pairs.
+
+      Produce {count} triples. The source caption describes an under-exposed
+      frame (night, dusk, tunnel, heavy overcast); the instruction raises
+      visibility without changing the time of day, the objects or the geometry;
+      the edited caption states the recovered illumination.
+
+      Allowed edit verbs: "brighten ...", "raise the exposure of ...", "recover
+      detail in the shadows of ...", "make the scene visible ...". Never ask to
+      turn night into day, and never change lamp colours or signal aspects.
+
+      Variety axes to sample: {axes}
+      Seed captions to paraphrase or extend: {seeds}
+
+      Batch index: {batch}.
+
+  super_resolution:
+    instruction: |
+      Task: super-resolution pairs.
+
+      Produce {count} triples. The source caption describes the same scene at a
+      degraded resolution: the wording must make the loss of detail audible
+      ("blurred", "soft edges", "plate numbers illegible", "signs unreadable").
+      The instruction asks to recover detail; the edited caption describes the
+      same scene with sharp, legible detail. Nothing else changes.
+
+      Allowed edit verbs: "sharpen ...", "make ... sharper", "restore the detail
+      of ...", "make the ... legible".
+
+      The pair of captions must describe an identical scene, so keep the object
+      list and their positions word-for-word.
+
+      Variety axes to sample: {axes}
+      Seed captions to paraphrase or extend: {seeds}
+
+      Batch index: {batch}.
+
+  object_removal:
+    instruction: |
+      Task: object-removal pairs.
+
+      Produce {count} triples. The source caption contains one removable
+      obstruction; the instruction deletes it and asks for plausible background
+      fill; the edited caption describes the revealed background. The removable
+      classes are temporary or non-safety-critical: construction barriers,
+      cones, parked cars, construction equipment, billboards, utility boxes,
+      advertising banners, shadows cast by a vehicle.
+
+      Never remove: pedestrians, cyclists, traffic signs, lane markings, guard
+      rails, the moving vehicle the camera is mounted on.
+
+      Allowed edit verbs: "remove ...", "erase ...", "delete ...", "clean up
+      the ...". For element 2 of the caption, the edited caption must describe
+      what becomes visible ("the kerb and a low wall are now visible").
+
+      Variety axes to sample: {axes}
+      Seed captions to paraphrase or extend: {seeds}
+
+      Batch index: {batch}.
+
+few_shot:
+  # Two worked examples that anchor the schema and the wording. They are sent
+  # with every call; the manuscript's running example (the speed-limit sign)
+  # is the second one, kept verbatim apart from the numbers.
+  - task: detection_sign
+    subtask: speed limit sign
+    source_caption: "The driver is travelling in the right-hand lane of a two-lane road; a circular speed limit sign reading 80 is mounted on a post on the right shoulder, about 40 m ahead, with a hedgerow behind it."
+    instruction: "Mark the speed limit sign on the right in blue."
+    edited_caption: "The driver is travelling in the right-hand lane of a two-lane road; a circular speed limit sign reading 80 is mounted on a post on the right shoulder, about 40 m ahead, now marked in blue, with a hedgerow behind it."
+    edited_region: "right shoulder, upper half of the frame"
+    edit_type: word_swap
+
+  - task: enhancement_rainy
+    subtask: night rain
+    source_caption: "A three-lane urban road at night during heavy rain; a silver sedan is 20 m ahead in the middle lane, its tail lights smeared by the wet windscreen, and the shop fronts on the right are blurred by rain streaks."
+    instruction: "Remove the rain streaks and make the scene clear."
+    edited_caption: "A three-lane urban road at night after the rain; a silver sedan is 20 m ahead in the middle lane, its tail lights sharp against the asphalt, and the shop fronts on the right are clearly visible."
+    edited_region: "across the whole frame"
+    edit_type: refine
+
+variety_axes:
+  # Sampled per batch and rendered into {axes}. Keeping these in one place
+  # makes it possible to audit what the 80,000 pairs actually cover.
+  common:
+    - road type: rural two-lane, urban arterial, elevated expressway, ring road, residential street, tunnel, bridge deck, roundabout approach, level crossing
+    - time of day: dawn, morning, midday, overcast afternoon, dusk, night, late night
+    - weather: clear, light rain, heavy rain, snow, fog, haze, strong low sun
+    - camera: dashcam at 1.3 m height, dashcam behind a dirty windscreen, windscreen with a wiper streak, slightly tilted horizon
+    - traffic density: empty, one lead vehicle, moderate flow, congested stop-and-go
+    - road surface: dry asphalt, wet asphalt with reflections, concrete, snow-covered, patched with repair strips
+  detection_sign:
+    - sign type and mounting: post-mounted, gantry-mounted, overhead, side-mounted on a wall, partially occluded by foliage
+    - sign state: clean, faded, tilted, partially covered by a sticker, back-lit at night
+  detection_lane:
+    - lane configuration: two lanes same direction, three lanes, opposing traffic, turn-only lane, dual carriageway
+    - marking type: solid white, dashed white, double yellow, worn, repainted, temporary orange
+  detection_vehicle:
+    - vehicle type and state: sedan, SUV, box truck, city bus, van, motorcycle; braking, indicating, parked at the kerb
+    - relative geometry: same lane ahead, adjacent lane, emerging from a side road, crossing the intersection
+  detection_pedestrian:
+    - pedestrian context: single adult at a crossing, group waiting at a kerb, child near a school, pedestrian on the median, pedestrian in dark clothing at night
+  enhancement_rainy:
+    - rain artefact: streaks on the windscreen, road spray from a lead vehicle, standing water reflections, drizzle veil
+  enhancement_snowy:
+    - snow artefact: falling flakes, snow on the windscreen, slush on the roadway, white-out contrast loss
+  enhancement_foggy:
+    - fog artefact: grey veil, distance contrast collapse, haloed headlights, misted glass
+  enhancement_lowlight:
+    - low-light cause: unlit rural road, dusk without lamps, tunnel entrance, deep overcast, single street lamp pool
+  super_resolution:
+    - degradation cue: soft edges, illegible plate, unreadable sign lettering, blocky compression, camera shake smear
+  object_removal:
+    - obstruction: construction barrier, traffic cones, parked delivery van, billboard trailer, utility cabinet, temporary fence, advertising banner
+
+generation_settings:
+  temperature: 0.9
+  top_p: 0.95
+  max_tokens: 4096
+  # Batches are requested per task; the count is tuned so one call stays well
+  # inside the context window while still giving the sampler room to diversify.
+  pairs_per_call: 8
+  retries: 3
+  retry_backoff_seconds: 5

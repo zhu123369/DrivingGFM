@@ -1,0 +1,178 @@
+# Filtering rules for the DrivingGFM paired dataset.
+
+level_1_text:
+  # Caption/instruction length in words.
+  min_words: 8
+  max_words: 55
+  # Maximum number of sentences in a scene caption (a caption describes one
+  # frame, not a trip).
+  max_sentences: 3
+  # Normalised strings shorter than this are dropped as degenerate.
+  min_chars: 40
+
+  bertscore:
+    enabled: true
+    model: "distilbert-base-uncased"
+    # Manuscript: mean BERTScore-F1 between source and edited caption = 0.92.
+    # Lower bound keeps "the edit is local" honest; upper bound rejects pairs
+    # where nothing changed (identical captions score ~1.0).
+    source_vs_edited_min: 0.88
+    source_vs_edited_max: 0.98
+    # Manuscript: mean BERTScore-F1 between instruction and edited caption = 0.81.
+    instruction_vs_edited_min: 0.72
+    # BERTScore needs a downloaded checkpoint. When it is not available the
+    # pipeline falls back to a lexical token-F1, whose scale is different, so it
+    # gets its own thresholds instead of silently reusing the semantic ones.
+    # The fallback is always recorded in the sample metadata as metric=token_f1.
+    fallback_when_unavailable:
+      metric: token_f1
+      source_vs_edited_min: 0.60
+      source_vs_edited_max: 0.98
+      instruction_vs_edited_min: 0.20
+
+  edit_locality:
+    # An instruction must carry exactly one edit operation. Connectives that
+    # chain a second unrelated edit ("and also", "then", "after that") are
+    # rejected because the paired caption can no longer localise the change.
+    reject_multi_edit: true
+    forbidden_connectives: ["and also", "as well as", "and then", "after that",
+                            "simultaneously", "meanwhile"]
+    # The instruction has to say where the target is; this is what grounds the
+    # edit in the frame and, later, in the spatial mask handed to Prompt-to-Prompt.
+    require_anchor: true
+    anchor_patterns:
+      - "on the (left|right)"
+      - "in the (left|right|middle|centre|center)"
+      - "ahead"
+      - "behind"
+      - "in the foreground"
+      - "in the background"
+      - "at the intersection"
+      - "near the"
+      - "in front of"
+      - "at the top"
+      - "at the bottom"
+      - "(\\d+|one|two|three|several) (metres|meters|m) (ahead|away)"
+    # The scene-level nouns below must survive the edit: an instruction that
+    # removes or rewrites them is a scene re-generation, not an edit.
+    preserved_nouns: ["road", "street", "highway", "intersection", "lane",
+                      "sky", "building", "tree"]
+    preserved_nouns_max_drop: 1
+
+  task_consistency:
+    # The instruction must be compatible with the task label it was generated
+    # under. A rainy-enhancement instruction that never mentions rain is a
+    # mislabelled pair.
+    enforce_condition_terms: true
+    # A weather or illumination condition has to be visible in the frame before
+    # the enhancement instruction can remove it. Removal instructions are the
+    # exception: "remove" only ever appears in the instruction, never in the
+    # description of the frame that still contains the obstruction.
+    require_term_in_source:
+      object_removal: false
+      super_resolution: true
+    condition_terms:
+      enhancement_rainy: ["rain", "rainy", "raining", "wet", "rainwater", "drizzle"]
+      enhancement_snowy: ["snow", "snowy", "snowfall", "snowing", "winter"]
+      enhancement_foggy: ["fog", "foggy", "mist", "haze", "hazy"]
+      enhancement_lowlight: ["night", "dark", "low light", "low-light",
+                             "underexposed", "dusk", "evening"]
+      super_resolution: ["sharp", "sharper", "clear", "clearer", "detail",
+                         "resolution", "blurry", "blurred", "high-definition"]
+      object_removal: ["remove", "removed", "erase", "erased", "delete",
+                       "deleted", "clean up", "take out", "taken out"]
+    detection_classes:
+      detection_sign: ["sign", "signboard", "marking board"]
+      detection_lane: ["lane", "marking", "edge line", "centre line", "center line"]
+      detection_vehicle: ["car", "vehicle", "truck", "bus", "van", "motorcycle"]
+      detection_pedestrian: ["pedestrian", "person", "people", "walker"]
+
+  safety_guards:
+    # Rule-constrained pre-screening of the text pair. These are deny rules,
+    # not a substitute for the VLM verification described as future work in
+    # Section VI of the manuscript.
+    enabled: true
+    deny_patterns:
+      # Changing a signal aspect alters the legal state of the scene; it cannot
+      # be derived from a caption edit and must not enter a perception dataset.
+      - "turn the traffic light (green|red|yellow|amber)"
+      - "change the (traffic light|signal) (to|into) (green|red|yellow|amber)"
+      - "make the (traffic light|signal) (green|red|yellow|amber)"
+      - "switch the (traffic light|signal)"
+      # Removing safety-critical objects is not a legal training target for the
+      # object-removal task.
+      - "remove the (stop sign|speed limit sign|yield sign|warning sign)"
+      - "remove (all|every) (vehicle|pedestrian|person|cyclist)"
+      - "remove the (pedestrian|child|cyclist)"
+      # Vulnerable road users must not be deleted from detection frames.
+      - "remove the (pedestrians|people) from the road"
+      # Text/watermark generation is an annotation artefact, not a perception edit.
+      - "add (a |the )?watermark"
+      - "add (a |the )?text overlay"
+      # Replacing the whole frame is scene synthesis, not a paired edit.
+      - "(replace|regenerate|generate) the (entire|whole) (scene|image|frame)"
+    max_targets_per_instruction: 1
+
+level_2_image:
+  resolution: 512
+  # Structural preservation. Manuscript reports a mean SSIM of 0.8923 between
+  # source and edited images on 10,000 sampled pairs; 0.80 keeps a tail of
+  # legitimate large edits while cutting structural drift.
+  ssim_min: 0.80
+  # A pair that is visually identical carries no editing signal.
+  ssim_max: 0.99
+
+  edit_region:
+    # Per-pixel difference above this L1 threshold counts as "changed".
+    pixel_threshold: 0.06
+    # Fraction of changed pixels. Below the floor the edit vanished; above the
+    # ceiling the layout was rebuilt. 35% is generous enough for weather edits
+    # and still rejects full-frame regeneration.
+    min_area_fraction: 0.002
+    max_area_fraction: 0.35
+    # Share of changed pixels that must fall inside the largest connected
+    # component after morphological opening, i.e. the edit should be one blob
+    # rather than speckle spread over the frame.
+    min_largest_component_share: 0.40
+    opening_kernel: 3
+
+  clip_directional:
+    enabled: true
+    # Manuscript mean is 0.2179; the shuffled baseline is 0.042. A floor of
+    # 0.08 keeps pairs clearly above random correspondence.
+    min_score: 0.08
+    clip_model: "openai/clip-vit-large-patch14"
+
+  photometric:
+    # Reject collapsed or blown-out outputs.
+    min_mean_luma: 0.05
+    max_mean_luma: 0.97
+    min_std_luma: 0.02
+    # Colour drift guard: mean per-channel shift relative to the source.
+    max_mean_channel_shift: 0.35
+
+  duplicate_detection:
+    # dHash on a 9x8 grid; <= 6 bits differing is treated as a near duplicate.
+    hash_size: 8
+    max_hamming: 6
+    # Pairs sharing the same source image are allowed (multi-instruction),
+    # but not more than this many distinct edited outputs per source.
+    max_edits_per_source: 1
+
+level_3_dataset:
+  evaluation_sample: 10000   # manuscript: 10,000 sampled for all evaluations
+  bootstrap_iterations: 1000
+  confidence: 0.95
+  fid_reference_sets:
+    - name: KITTI
+    - name: Cityscapes
+  report_path: reports/dataset_quality.json
+
+quota_policy:
+  # Fill quotas per task in the order listed in configs/tasks.yaml. Overflow
+  # from an over-supplied task is not reallocated: the paper reports per-task
+  # counts, so a surplus sample is cheaper to discard than to mislabel.
+  allow_surplus_reallocation: false
+  # Keep generating until every task reaches its quota; abandon a task after
+  # this many consecutive discarded batches (a sign of a broken prompt).
+  max_consecutive_rejections_per_task: 12

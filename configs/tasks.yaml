@@ -1,0 +1,109 @@
+# DrivingGFM training-data construction: task definition and quotas.
+
+meta:
+  version: "1.0"
+  total_effective_pairs: 80000
+  quota_source: "Manuscript Table I"
+  generation_backbone: "Stable Diffusion V3 (stabilityai/stable-diffusion-3-medium)"
+  caption_model: "DeepSeek R1"
+  paired_by: "Prompt-to-Prompt (Hertz et al., 2022), cross-attention control"
+
+tasks:
+  - id: detection_sign
+    family: object_detection
+    quota: 11000
+    edit_mode: region
+    pair_strategy: p2p
+    prompt_template: detection_sign
+    filter_profile: detection
+    description: >
+      Traffic-sign detection pairs. The instruction asks for a sign to be marked,
+      recoloured, highlighted or boxed, so that the sign becomes the salient
+      target of the edited frame while the road layout is untouched.
+    target_element: ["speed limit sign", "stop sign", "yield sign", "warning sign",
+                     "no-entry sign", "direction sign", "construction sign",
+                     "pedestrian crossing sign"]
+
+  - id: detection_lane
+    family: object_detection
+    quota: 7000
+    edit_mode: region
+    pair_strategy: p2p
+    prompt_template: detection_lane
+    filter_profile: detection
+    target_element: ["lane marking", "edge line", "centre line", "crosswalk",
+                     "dashed lane divider"]
+
+  - id: detection_vehicle
+    family: object_detection
+    quota: 9000
+    edit_mode: region
+    pair_strategy: p2p
+    prompt_template: detection_vehicle
+    filter_profile: detection
+    target_element: ["car", "truck", "bus", "van", "motorcycle", "cyclist"]
+
+  - id: detection_pedestrian
+    family: object_detection
+    quota: 7000
+    edit_mode: region
+    pair_strategy: p2p
+    prompt_template: detection_pedestrian
+    filter_profile: detection
+    target_element: ["pedestrian", "child pedestrian", "pedestrian group"]
+
+  - id: enhancement_rainy
+    family: image_enhancement
+    quota: 5000
+    edit_mode: refine
+    pair_strategy: p2p
+    prompt_template: enhancement_rainy
+    filter_profile: enhancement
+    condition: rain
+
+  - id: enhancement_snowy
+    family: image_enhancement
+    quota: 6000
+    edit_mode: refine
+    pair_strategy: p2p
+    prompt_template: enhancement_snowy
+    filter_profile: enhancement
+    condition: snow
+
+  - id: enhancement_foggy
+    family: image_enhancement
+    quota: 4000
+    edit_mode: refine
+    pair_strategy: p2p
+    prompt_template: enhancement_foggy
+    filter_profile: enhancement
+    condition: fog
+
+  - id: enhancement_lowlight
+    family: image_enhancement
+    quota: 10000
+    edit_mode: refine
+    pair_strategy: p2p
+    prompt_template: enhancement_lowlight
+    filter_profile: enhancement
+    condition: low_light
+
+  - id: super_resolution
+    family: image_super_resolution
+    quota: 8000
+    edit_mode: refine
+    pair_strategy: p2p
+    prompt_template: super_resolution
+    filter_profile: super_resolution
+    degradation_fallback: bicubic_downsample_4x
+
+  - id: object_removal
+    family: object_removal
+    quota: 13000
+    edit_mode: word_swap
+    pair_strategy: p2p
+    prompt_template: object_removal
+    filter_profile: removal
+    removable_classes: ["temporary barrier", "traffic cone", "parked car",
+                        "construction equipment", "billboard", "utility box",
+                        "shadow cast by a vehicle", "advertising banner"]

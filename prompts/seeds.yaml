@@ -1,0 +1,202 @@
+version: "1.0"
+seeds:
+
+  - id: s01
+    scene: {road: rural two-lane, time: midday, weather: clear, camera: dashcam}
+    caption: "The camera looks down a straight rural two-lane road; a white line marks the right edge, a low stone wall runs along the left shoulder, and a silver hatchback is 30 m ahead travelling in the same direction."
+    suitable_for: [detection_lane, detection_vehicle, detection_sign, super_resolution, object_removal]
+
+  - id: s02
+    scene: {road: urban arterial, time: midday, weather: clear, camera: dashcam}
+    caption: "A three-lane urban arterial stretches ahead; a round speed limit sign reading 60 stands on a post at the right kerb about 40 m away, and two cars occupy the left and middle lanes."
+    suitable_for: [detection_sign, detection_vehicle, detection_lane, super_resolution]
+
+  - id: s03
+    scene: {road: urban intersection, time: midday, weather: clear, camera: dashcam}
+    caption: "The vehicle approaches a four-way intersection; a pedestrian in a dark jacket waits at the right kerb, a green car is stopped in the opposite direction, and a stop line is painted across the approach lane."
+    suitable_for: [detection_pedestrian, detection_vehicle, detection_lane, object_removal]
+
+  - id: s04
+    scene: {road: elevated expressway, time: overcast afternoon, weather: clear, camera: dashcam}
+    caption: "From the elevated expressway the road descends toward a riverside district; a box truck runs 25 m ahead in the right lane, concrete barriers line the left edge, and the city skyline sits in the background."
+    suitable_for: [detection_vehicle, detection_lane, super_resolution, enhancement_foggy]
+
+  - id: s05
+    scene: {road: residential street, time: morning, weather: clear, camera: dashcam}
+    caption: "A narrow residential street with parked cars on both sides; a school-zone warning sign stands on the left kerb, a child walks along the right pavement, and a van is parked half on the kerb 15 m ahead."
+    suitable_for: [detection_sign, detection_pedestrian, object_removal, super_resolution]
+
+  - id: s06
+    scene: {road: rural road, time: night, weather: heavy rain, camera: dashcam}
+    caption: "The road at night in heavy rain; rain streaks smear the windscreen, the headlights of an oncoming car bloom across the wet asphalt, and the centre line is barely visible."
+    suitable_for: [enhancement_rainy, enhancement_lowlight]
+
+  - id: s07
+    scene: {road: urban arterial, time: night, weather: light rain, camera: dashcam}
+    caption: "A wet city street after midnight; a taxi is 20 m ahead in the middle lane with its tail lights reflecting on the road surface, and a bus shelter glows on the right."
+    suitable_for: [enhancement_rainy, enhancement_lowlight, detection_vehicle]
+
+  - id: s08
+    scene: {road: mountain pass, time: overcast afternoon, weather: snow, camera: dashcam}
+    caption: "Snow falls over a mountain pass; flakes streak the windscreen, snow lies along both shoulders, and a chain of slow vehicles climbs the gradient 40 m ahead."
+    suitable_for: [enhancement_snowy, detection_vehicle]
+
+  - id: s09
+    scene: {road: suburban road, time: morning, weather: snow, camera: dashcam}
+    caption: "A suburban road after overnight snow; slush covers the kerbside lane, a snow-covered warning sign is half readable on the right, and a delivery van follows 30 m behind."
+    suitable_for: [enhancement_snowy, detection_sign, object_removal]
+
+  - id: s10
+    scene: {road: rural road, time: morning, weather: fog, camera: dashcam}
+    caption: "Thick fog reduces visibility to about 50 m on a rural road; the centre line dissolves into grey, a lorry's rear lights float ahead, and roadside trees fade in the distance."
+    suitable_for: [enhancement_foggy, detection_vehicle, detection_lane]
+
+  - id: s11
+    scene: {road: coastal highway, time: dusk, weather: haze, camera: dashcam}
+    caption: "A hazy dusk on a coastal highway; the sea lies beyond the right barrier, a camper van runs 35 m ahead, and the road markings lose contrast toward the horizon."
+    suitable_for: [enhancement_foggy, enhancement_lowlight, super_resolution]
+
+  - id: s12
+    scene: {road: unlit rural road, time: night, weather: clear, camera: dashcam}
+    caption: "An unlit rural road at night; the headlights pick out a dashed centre line and a hedge on the right, a deer stands on the shoulder 45 m ahead, and the sky is black."
+    suitable_for: [enhancement_lowlight, detection_lane]
+
+  - id: s13
+    scene: {road: tunnel, time: day, weather: clear, camera: dashcam}
+    caption: "Inside a road tunnel the walls are lit by a row of sodium lamps; a van is 18 m ahead, the road surface is dry, and the exit glows as a bright rectangle in the distance."
+    suitable_for: [enhancement_lowlight, detection_vehicle, super_resolution]
+
+  - id: s14
+    scene: {road: urban arterial, time: night, weather: clear, camera: dashcam}
+    caption: "A night-time city avenue under street lamps; a tram crosses 60 m ahead, pedestrians gather at the right kerb, and shop signs brighten the left side."
+    suitable_for: [enhancement_lowlight, detection_pedestrian, super_resolution]
+
+  - id: s15
+    scene: {road: rural two-lane, time: midday, weather: clear, camera: dashcam}
+    caption: "A gentle right-hand curve on a rural road; a warning sign for the curve stands on the left shoulder, white edge lines follow the bend, and a tractor moves slowly 50 m ahead."
+    suitable_for: [detection_sign, detection_lane, object_removal, super_resolution]
+
+  - id: s16
+    scene: {road: construction zone, time: midday, weather: clear, camera: dashcam}
+    caption: "A lane closure on an urban road; orange cones funnel traffic to the left, a temporary barrier blocks the right lane, and a works vehicle is parked behind the barrier."
+    suitable_for: [object_removal, detection_lane, detection_vehicle]
+
+  - id: s17
+    scene: {road: urban arterial, time: overcast afternoon, weather: clear, camera: dashcam}
+    caption: "A delivery van is parked in the right lane of a busy street; a billboard trailer sits on the pavement, and cyclists pass on the left of the camera vehicle."
+    suitable_for: [object_removal, detection_vehicle, detection_lane]
+
+  - id: s18
+    scene: {road: motorway, time: midday, weather: clear, camera: dashcam}
+    caption: "Four lanes of motorway with moderate traffic; a coach occupies the right lane 40 m ahead, a motorcycle overtakes in the left lane, and a gantry sign spans the carriageway."
+    suitable_for: [detection_vehicle, detection_sign, detection_lane, super_resolution]
+
+  - id: s19
+    scene: {road: urban crossing, time: morning, weather: clear, camera: dashcam}
+    caption: "A zebra crossing spans the road ahead; a group of pedestrians waits on the left kerb, a school bus is stopped on the right, and the crossing stripes are freshly painted."
+    suitable_for: [detection_pedestrian, detection_lane, detection_vehicle]
+
+  - id: s20
+    scene: {road: suburban roundabout, time: midday, weather: clear, camera: dashcam}
+    caption: "The vehicle enters a two-lane roundabout; a yield sign stands at the entry, a grey SUV circles in the outer lane, and the central island is planted with shrubs."
+    suitable_for: [detection_sign, detection_vehicle, detection_lane]
+
+  - id: s21
+    scene: {road: rural road, time: dusk, weather: light rain, camera: dashcam}
+    caption: "Dusk on a rural road with light rain; a tractor trailer pulls out of a field entrance on the left, wet grass borders the road, and the sky is a flat grey."
+    suitable_for: [enhancement_rainy, detection_vehicle, object_removal]
+
+  - id: s22
+    scene: {road: urban arterial, time: night, weather: snow, camera: dashcam}
+    caption: "Snow falls on a lit city street at night; flakes blur the headlights, tyre tracks cut through the slush, and a bus waits at a stop on the right."
+    suitable_for: [enhancement_snowy, enhancement_lowlight, detection_vehicle]
+
+  - id: s23
+    scene: {road: rural road, time: midday, weather: fog, camera: dashcam}
+    caption: "Fog blankets a rural road; a hint of a farm gate stands on the left, the road surface is damp, and headlights of an approaching tractor appear as two pale discs."
+    suitable_for: [enhancement_foggy, object_removal]
+
+  - id: s24
+    scene: {road: urban arterial, time: overcast afternoon, weather: clear, camera: dashcam}
+    caption: "A wide urban arterial with a median planted with low trees; a lane-use sign hangs above the right lane, a cyclist rides in the cycle lane, and traffic flows steadily."
+    suitable_for: [detection_sign, detection_lane, detection_vehicle, detection_pedestrian]
+
+  - id: s25
+    scene: {road: highway ramp, time: midday, weather: clear, camera: dashcam}
+    caption: "The camera car joins a motorway from an on-ramp; a merging lane runs alongside the main carriageway, a hatchback is 20 m ahead, and the ramp barrier curves to the left."
+    suitable_for: [detection_lane, detection_vehicle, super_resolution]
+
+  - id: s26
+    scene: {road: urban arterial, time: midday, weather: clear, camera: dashcam}
+    caption: "An intersection with a dedicated right-turn lane; the right-turn arrow is painted in the lane, a no-entry sign stands on the corner, and a pedestrian waits at the corner."
+    suitable_for: [detection_sign, detection_lane, detection_pedestrian]
+
+  - id: s27
+    scene: {road: rural two-lane, time: late night, weather: clear, camera: dashcam}
+    caption: "A straight rural road late at night; only the headlights illuminate the scene, a cat crosses the road 35 m ahead, and reflectors mark the left edge."
+    suitable_for: [enhancement_lowlight, detection_lane]
+
+  - id: s28
+    scene: {road: urban arterial, time: morning, weather: heavy rain, camera: dashcam}
+    caption: "Heavy rain over an urban arterial; standing water reflects the signals overhead, spray from a bus obscures the right lane, and the wipers leave a smeared band."
+    suitable_for: [enhancement_rainy, detection_vehicle, detection_lane]
+
+  - id: s29
+    scene: {road: service road, time: midday, weather: clear, camera: dashcam}
+    caption: "A service road behind a shopping centre; a utility cabinet stands on the right kerb, a temporary fence blocks the far end, and a van is parked across two bays."
+    suitable_for: [object_removal, super_resolution]
+
+  - id: s30
+    scene: {road: highway, time: overcast afternoon, weather: clear, camera: dashcam}
+    caption: "A highway crosses open farmland; a weight-limit sign hangs from a gantry, the right lane is empty for 100 m, and a tractor works in the field beyond the barrier."
+    suitable_for: [detection_sign, detection_lane, enhancement_foggy]
+
+  - id: s31
+    scene: {road: urban arterial, time: dusk, weather: clear, camera: dashcam}
+    caption: "Dusk on an arterial road; the lamps have not yet come on, a lorry is 50 m ahead in the right lane, and the buildings on the left cast long shadows across the pavement."
+    suitable_for: [enhancement_lowlight, detection_vehicle, super_resolution]
+
+  - id: s32
+    scene: {road: pedestrian street, time: midday, weather: clear, camera: dashcam}
+    caption: "A shared pedestrian street with bollards at both ends; a cyclist rides slowly on the right, a delivery cart blocks part of the lane, and shop awnings shade the left side."
+    suitable_for: [detection_pedestrian, object_removal, detection_vehicle]
+
+  - id: s33
+    scene: {road: ring road, time: night, weather: light rain, camera: dashcam}
+    caption: "A ring road at night in light rain; a truck with a reflective rear bumper runs 30 m ahead, street lamps repeat along the median, and the wet surface mirrors them."
+    suitable_for: [enhancement_rainy, enhancement_lowlight, detection_vehicle]
+
+  - id: s34
+    scene: {road: rural road, time: morning, weather: haze, camera: dashcam}
+    caption: "Morning haze over a rural road; a construction crane rises beyond the right shoulder, a warning sign for roadworks stands at the edge, and the road narrows ahead."
+    suitable_for: [enhancement_foggy, detection_sign, object_removal]
+
+  - id: s35
+    scene: {road: urban arterial, time: midday, weather: clear, camera: dashcam}
+    caption: "An arterial road passing a bus station; a bus pulls out of the bay on the right, a motorcycle waits behind it, and the lane markings are worn but visible."
+    suitable_for: [detection_vehicle, detection_lane, super_resolution, object_removal]
+
+  - id: s36
+    scene: {road: level crossing, time: overcast afternoon, weather: clear, camera: dashcam}
+    caption: "The vehicle approaches a level crossing; the barrier is raised, a warning triangle sign stands on the right, and a delivery van waits on the opposite side."
+    suitable_for: [detection_sign, detection_vehicle, super_resolution]
+
+  - id: s37
+    scene: {road: urban arterial, time: midday, weather: clear, camera: dashcam}
+    caption: "A queue of stopped traffic at an intersection; a hatchback sits 8 m ahead, a pedestrian crossing runs across the frame, and a shop sign hangs above the left pavement."
+    suitable_for: [detection_pedestrian, detection_vehicle, object_removal]
+
+  - id: s38
+    scene: {road: rural two-lane, time: dusk, weather: snow, camera: dashcam}
+    caption: "Light snow at dusk on a rural road; flakes catch the headlights, the road ahead is white with slush, and a snow plough works on the right shoulder 60 m away."
+    suitable_for: [enhancement_snowy, detection_vehicle, object_removal]
+
+  - id: s39
+    scene: {road: urban arterial, time: night, weather: fog, camera: dashcam}
+    caption: "Fog at night on an arterial road; the street lamps cast pale cones, a car's rear lights sit 25 m ahead as red smudges, and the kerb is hard to distinguish."
+    suitable_for: [enhancement_foggy, enhancement_lowlight, detection_vehicle]
+
+  - id: s40
+    scene: {road: motorway, time: midday, weather: clear, camera: dashcam}
+    caption: "A motorway underpass; the carriageway narrows between concrete pillars, a truck occupies the left lane ahead, and the lanes are marked with solid white lines."
+    suitable_for: [detection_lane, detection_vehicle, super_resolution, object_removal]

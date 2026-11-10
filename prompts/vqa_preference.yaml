@@ -1,0 +1,92 @@
+version: "1.0"
+
+annotators:
+  # Manuscript Section III-D. One model per sample, randomly assigned; this is
+  # diversification of label sources, not an ensemble vote.
+  pool:
+    - name: llava-next
+      endpoint_model: "llava-v1.6-mistral-7b"
+      weight: 0.34
+    - name: qwen-qvq-max
+      endpoint_model: "qwen-vl-max"
+      weight: 0.33
+    - name: llama-4
+      endpoint_model: "llama-4-scout-17b"
+      weight: 0.33
+  assignment: random            # random | round_robin | single:<name>
+  seed: 2026
+
+instruction_generation:
+  system: |
+    You are a driving-scene annotator. You are shown one dashcam frame. Propose
+    one plausible image-editing instruction that a perception model should learn
+    to execute on this frame. The instruction must be one imperative sentence
+    naming one visible element and where it sits in the frame. Do not propose
+    edits to traffic-light aspects, do not propose deleting pedestrians,
+    cyclists or traffic signs. Return JSON only:
+    {"instruction": "...", "target": "...", "region": "..."}
+  user: |
+    Frame: a driving scene, camera mounted on the vehicle, forward view.
+    Propose 1 editing instruction that is plausible for this frame and that a
+    dataset would benefit from.
+  temperature: 0.6
+  samples_per_image: 1
+
+scoring:
+  # Answers are normalised to [0, 1] and weighted by the reported confidence;
+  # the alignment score is the mean over the questions that were answered.
+  # This is the operational form of Eq. (7): s(image, q) = mean_i(a_i * conf_i).
+  score_reduction: confidence_weighted_mean
+  questions_per_candidate: 5
+
+  questions:
+    - id: q1_instruction_followed
+      question: >
+        Does this image show the edit requested by the instruction
+        "{instruction}"? Answer yes, partially or no, and state the confidence
+        from 0 to 1.
+      answer_map: {"yes": 1.0, "partially": 0.5, "no": 0.0}
+
+    - id: q2_structure_preserved
+      question: >
+        Compared with the source frame, are the road geometry, lane layout and
+        the position of all other objects unchanged? Answer yes, partially or no
+        with a confidence from 0 to 1.
+      answer_map: {"yes": 1.0, "partially": 0.5, "no": 0.0}
+
+    - id: q3_target_localisation
+      question: >
+        Is the edited element located where the instruction says it is
+        ({region})? Answer yes, partially or no with a confidence from 0 to 1.
+      answer_map: {"yes": 1.0, "partially": 0.5, "no": 0.0}
+
+    - id: q4_artifact_free
+      question: >
+        Is the edited frame free of visible artefacts such as smearing,
+        duplicated objects, melted edges or impossible reflections? Answer yes,
+        partially or no with a confidence from 0 to 1.
+      answer_map: {"yes": 1.0, "partially": 0.5, "no": 0.0}
+
+    - id: q5_safety_plausible
+      question: >
+        Does the edited frame remain a physically and legally plausible driving
+        scene, with no change to signal aspects and no missing road user? Answer
+        yes, partially or no with a confidence from 0 to 1.
+      answer_map: {"yes": 1.0, "partially": 0.5, "no": 0.0}
+
+  response_format: |
+    {"answers": [{"id": "...", "answer": "yes|partially|no", "confidence": 0.0}],
+     "rationale": "<one short sentence>"}
+
+preference_pairs:
+  # Eq. (8) needs a chosen and a rejected output for the same input.
+  candidates_per_input: 4        # different random seeds, same instruction
+  pair_construction: top1_vs_bottom1
+  # Manuscript: samples whose mean VQA answer confidence is below 0.7 are
+  # discarded before pairs are built.
+  min_mean_confidence: 0.7
+  # A pair is only kept if the two candidates are separated by this much score;
+  # otherwise the preference is a coin flip and DPO would learn noise.
+  min_score_margin: 0.05
+  # Both candidates must pass the artefact and safety questions on average.
+  require_positive_floor: 0.5
