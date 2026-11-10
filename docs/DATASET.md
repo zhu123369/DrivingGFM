@@ -24,7 +24,7 @@ prompts alone.
 | 3. Pair rendering | `scripts/03_generate_pairs.py` | text-passing triples | `data/pairs/<task>.jsonl` + two PNGs per pair | GPU, diffusers, SD3 weights |
 | 4. Pair filtering | `scripts/04_filter_pairs.py` | rendered pairs | same ledger, `status` updated | optional CLIP on GPU |
 | 5. Manifest + report | `scripts/05_report.py` | task ledgers | `data/manifest/*.jsonl`, `reports/dataset_quality.*` | numpy, PIL |
-| 6. Prompt-only selection | `scripts/06_select_prompts.py` | text-passing triples | `data/manifest/prompts_only.jsonl` | numpy only |
+| 6. Prompt-only selection | `scripts/06_select_prompts.py` | skips rendering: selects exactly 80,000 text triples and writes `data/manifest/prompts_only.jsonl` | CPU |
 
 Stage 1 and 2 run on a CPU-only machine; only stage 3 needs the GPU, and it is
 the only stage that is expensive. That ordering is deliberate: a malformed caption
