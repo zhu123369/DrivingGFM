@@ -30,7 +30,7 @@ Example: given a road scene and the instruction `make it a rainy night road scen
 └── LICENSE                   
 ```
 
-Model weights are not stored in this repository (4 GB exceeds GitHub limits); they ship through the Hugging Face repo. Dataset outputs — rendered pairs, ledgers and the quality report — are not committed either: one full run writes 80,000 pairs, two PNGs each, so `data/` and `reports/` are regenerated from the code rather than distributed.
+Model weights are not stored in this repository (4 GB exceeds GitHub limits); they ship through the Hugging Face repo.
 
 ## Installation
 
