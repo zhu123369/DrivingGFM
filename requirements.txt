@@ -5,3 +5,4 @@ accelerate==0.20.3
 safetensors==0.4.5
 pillow==10.4.0
 numpy==1.26.4
+pyyaml==6.0
