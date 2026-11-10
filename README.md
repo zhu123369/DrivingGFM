@@ -110,7 +110,7 @@ Quotas follow Table I of the manuscript:
 | 3. Pair rendering | `scripts/03_generate_pairs.py` | Prompt-to-Prompt on SD3: one shared noise, two trajectories, source attention merged into the edited one | GPU |
 | 4. Pair filtering | `scripts/04_filter_pairs.py` | SSIM, changed area, largest component, luma, channel shift, CLIP-D, dHash; then rank and keep exactly the quota | GPU optional |
 | 5. Manifest + report | `scripts/05_report.py` | `data/manifest/all.jsonl`, per-task summary, quality report with the shuffled-CLIP baseline and bootstrap CI | CPU |
-| 6. Prompt-only selection | `scripts/06_select_prompts.py` | skips rendering: selects exactly 80,000 text triples, bucket-rotating over subtasks | CPU |
+| 6. Prompt-only selection | `scripts/06_select_prompts.py` | skips rendering: selects exactly 80,000 text triples and writes `data/manifest/prompts_only.jsonl` | CPU |
 
 ### Running
 
