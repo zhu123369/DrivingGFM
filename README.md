@@ -1,23 +1,44 @@
 # DrivingGFM
 
-**DrivingGFM** is a generalist foundation model for unified driving visual perception. Built upon Stable Diffusion V3 with instruction-tuning and DPO-based reinforcement learning, it supports multiple driving visual perception tasks including object detection, image enhancement, super-resolution and object removal via editing instructions.
+**DrivingGFM v1.0** is a generalist foundation model for unified driving visual perception. Built upon Stable Diffusion V3 with instruction-tuning and DPO-based reinforcement learning, it supports multiple driving visual perception tasks including object detection, image enhancement, super-resolution and object removal via editing instructions.
 
 Weights are distributed on Hugging Face: [`ZehongZhu/drivinggfm`](https://huggingface.co/ZehongZhu/drivinggfm)
+
+This repository also carries the code that built the instruction-tuning set — prompt templates, sampling rules, filters and the manifest schema.
+
+Example: given a road scene and the instruction `make it a rainy night road scene`, the pipeline returns the same scene relit and retextured for rain at night. Use 20 steps for production runs; lower step counts trade fidelity for speed.
 
 ## Repository layout
 
 ```
 .
-├── pipeline_drivinggfm.py  
-├── infer.py                
+├── pipeline_drivinggfm.py      
+├── infer.py               
+├── configs/                 
+│   ├── tasks.yaml
+│   └── filter_rules.yaml
+├── prompts/                    
+│   ├── seeds.yaml
+│   ├── caption_expansion.yaml
+│   └── vqa_preference.yaml
+├── data_pipeline/         
+├── scripts/                   
+├── tests/                    
+├── docs/
+│   └── DATASET.md            
 ├── requirements.txt
-└── LICENSE                  
+└── LICENSE                   
 ```
+
+Model weights are not stored in this repository (4 GB exceeds GitHub limits); they ship through the Hugging Face repo. Dataset outputs — rendered pairs, ledgers and the quality report — are not committed either: one full run writes 80,000 pairs, two PNGs each, so `data/` and `reports/` are regenerated from the code rather than distributed.
 
 ## Installation
 
 ```bash
 pip install -r requirements.txt
+
+# optional, only for the quality report
+pip install bert-score torch-fidelity
 ```
 
 ## Quick start
@@ -49,6 +70,8 @@ A local weights directory works just as well — pass the directory instead of t
 pipe = DrivinggfmPipeline.from_pretrained("/path/to/drivinggfm", trust_remote_code=True)
 ```
 
+`trust_remote_code=True` is required because the pipeline class ships inside the model repository rather than in the diffusers registry; see [Loading notes](#loading-notes).
+
 ## Command line
 
 ```bash
@@ -63,6 +86,57 @@ python infer.py --image scene.png --prompt "..." --device cuda --dtype float16 -
 | `--guidance` | 7.5 | Instruction adherence: higher follows the prompt more literally, but over-saturates |
 | `--size` | 512 | Inference resolution (short edge scaled, centre-cropped) |
 | `--seed` | 2026 | Random seed |
+
+## Dataset construction
+
+The 80,000 paired samples the checkpoint was instruction-tuned on are produced by the code in this repository. Nothing here ships images or captions — it ships the procedure, the prompts, the thresholds and the acceptance criteria, so the dataset can be regenerated or audited sample by sample. The full specification is in [`docs/DATASET.md`](docs/DATASET.md).
+
+Quotas follow Table I of the manuscript:
+
+| Family | Tasks and counts | Pairs |
+|---|---|---|
+| Object detection | sign 11,000 / lane 7,000 / vehicle 9,000 / pedestrian 7,000 | 34,000 |
+| Image enhancement | rainy 5,000 / snowy 6,000 / foggy 4,000 / low-light 10,000 | 25,000 |
+| Super-resolution | — | 8,000 |
+| Object removal | — | 13,000 |
+| **Total** | | **80,000** |
+
+### Stages
+
+| Stage | Script | What it does | Needs |
+|---|---|---|---|
+| 1. Caption expansion | `scripts/01_expand_captions.py` | 40 seed captions × 10 task templates → (source caption, instruction, edited caption) triples | an OpenAI-compatible LLM endpoint |
+| 2. Text filtering | `scripts/02_filter_captions.py` | 10 checks: caption length, imperative form, spatial anchor, single edit, scene preservation, task consistency, deny-list, caption drift, instruction agreement, duplicates | CPU |
+| 3. Pair rendering | `scripts/03_generate_pairs.py` | Prompt-to-Prompt on SD3: one shared noise, two trajectories, source attention merged into the edited one | GPU |
+| 4. Pair filtering | `scripts/04_filter_pairs.py` | SSIM, changed area, largest component, luma, channel shift, CLIP-D, dHash; then rank and keep exactly the quota | GPU optional |
+| 5. Manifest + report | `scripts/05_report.py` | `data/manifest/all.jsonl`, per-task summary, quality report with the shuffled-CLIP baseline and bootstrap CI | CPU |
+| 6. Prompt-only selection | `scripts/06_select_prompts.py` | skips rendering: selects exactly 80,000 text triples, bucket-rotating over subtasks | CPU |
+
+### Running
+
+```bash
+python scripts/run_all.py --dry-run      # validate config, no model calls
+python scripts/run_all.py                # stages 1-5 in order
+python -m unittest discover -s tests     # 39 tests, no GPU, no network, no key
+```
+
+Stage 1 talks to any OpenAI-compatible endpoint — it speaks the chat-completions protocol over `urllib`, so no vendor SDK is installed:
+
+```bash
+export DRIVINGGFM_LLM_BASE_URL=https://api.deepseek.com/v1
+export DRIVINGGFM_LLM_API_KEY=...
+export DRIVINGGFM_LLM_MODEL=deepseek-chat     # optional; default is deepseek-r1
+python scripts/01_expand_captions.py --workers 16
+```
+
+On Windows, set the same three variables with `$env:DRIVINGGFM_LLM_API_KEY = "..."` instead of `export`.
+
+For the prompts alone, without any rendering:
+
+```bash
+python scripts/02_filter_captions.py --no-bert
+python scripts/06_select_prompts.py --require-full
+```
 
 ## Loading notes
 
@@ -110,6 +184,6 @@ Weights and code are distributed under **CreativeML Open RAIL-M**; the full text
   title  = {DrivingGFM: Generalist Foundation Model for Unified Driving Visual Perception},
   author = {DrivingGFM Team, Tongji University},
   year   = {2026},
-  note   = {Model v1.0}
+  note   = {Model v1.0.0}
 }
 ```
