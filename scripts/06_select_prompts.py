@@ -88,7 +88,16 @@ def main() -> int:
     parser.add_argument("--tasks", default="all")
     parser.add_argument("--require-full", action="store_true",
                         help="exit non-zero when a task cannot reach its quota")
+    parser.add_argument("--out", default="prompts_only.jsonl",
+                        help="manifest filename inside data/manifest/. Stage 5 writes "
+                             "data/manifest/all.jsonl; this stage never touches it, so "
+                             "the text-only selection can sit next to a rendered one.")
     args = parser.parse_args()
+
+    out_name = args.out.strip()
+    if not out_name.endswith(".jsonl") or Path(out_name).name != out_name:
+        parser.error("--out must be a plain filename ending in .jsonl, e.g. prompts_only.jsonl")
+    out_stem = out_name[: -len(".jsonl")]
 
     tasks_cfg = cfg.load_tasks()
     tasks_cfg.validate_quota()
@@ -132,7 +141,7 @@ def main() -> int:
                 "status": "selected",
             })
 
-        with (out_dir / f"{task_id}.jsonl").open("w", encoding="utf-8") as handle:
+        with (out_dir / f"{out_stem}.{task_id}.jsonl").open("w", encoding="utf-8") as handle:
             for row in rows:
                 handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
@@ -147,18 +156,19 @@ def main() -> int:
         if len(rows) < spec.quota:
             shortfalls.append(f"{task_id}: {len(rows)}/{spec.quota}")
 
-    with (out_dir / "all.jsonl").open("w", encoding="utf-8") as handle:
+    with (out_dir / out_name).open("w", encoding="utf-8") as handle:
         for row in all_rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
+    summary["manifest"] = out_name
     summary["complete"] = not shortfalls
     summary["shortfalls"] = shortfalls
-    (out_dir / "summary.json").write_text(
+    (out_dir / f"{out_stem}_summary.json").write_text(
         json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
     )
 
     print(f"\ntotal selected: {summary['total']} / {summary['quota_total']}")
-    print(f"manifest: {out_dir / 'all.jsonl'}")
+    print(f"manifest: {out_dir / out_name}")
     if shortfalls:
         print("shortfalls (generate more triples for these tasks):")
         for item in shortfalls:
