@@ -216,3 +216,26 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- DrivingGFM: this repository ---------------------------------------------
+# Weights and checkpoints live on Hugging Face, never in the repository.
+*.bin
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+
+# Inline inference output (infer.py --out defaults to output.png).
+output*.png
+result*.png
+
+# Dataset construction output. One full run writes 160,000 PNGs (~80-100 GB)
+# plus the ledgers and the quality report; regenerate with scripts/, never commit.
+data/
+reports/
+
+# Editor and OS noise (the templates above leave these commented out).
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
