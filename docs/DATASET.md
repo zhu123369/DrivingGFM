@@ -12,8 +12,10 @@ audited sample by sample.
 
 ## 1. What the pipeline does
 
-Five stages, each writing a file the next stage reads. Every stage is resumable
-and every decision is recorded next to the sample it was made for.
+Six stages, each writing a file the next stage reads. Every stage is resumable
+and every decision is recorded next to the sample it was made for. Stages 1–5
+produce the rendered pairs; stage 6 stops after text filtering and emits the
+prompts alone.
 
 | Stage | Script | Input | Output | Needs |
 |---|---|---|---|---|
@@ -22,12 +24,20 @@ and every decision is recorded next to the sample it was made for.
 | 3. Pair rendering | `scripts/03_generate_pairs.py` | text-passing triples | `data/pairs/<task>.jsonl` + two PNGs per pair | GPU, diffusers, SD3 weights |
 | 4. Pair filtering | `scripts/04_filter_pairs.py` | rendered pairs | same ledger, `status` updated | optional CLIP on GPU |
 | 5. Manifest + report | `scripts/05_report.py` | task ledgers | `data/manifest/*.jsonl`, `reports/dataset_quality.*` | numpy, PIL |
+| 6. Prompt-only selection | `scripts/06_select_prompts.py` | text-passing triples | `data/manifest/prompts_only.jsonl` | numpy only |
 
 Stage 1 and 2 run on a CPU-only machine; only stage 3 needs the GPU, and it is
 the only stage that is expensive. That ordering is deliberate: a malformed caption
 is rejected before it can cost a denoising pass.
 
-One command runs everything:
+Stage 6 is the alternative exit: it reads the stage-2 output, selects exactly the
+quota per task (round-robin over subtasks, ranked by closeness to the reported
+caption statistics) and writes `data/manifest/prompts_only.jsonl`. It never
+touches `data/manifest/all.jsonl`, so a text-only selection can sit next to a
+rendered one. Under `--require-full` it exits non-zero and lists the short tasks
+rather than emitting a manifest that looks complete but is not.
+
+One command runs stages 1–5:
 
 ```bash
 python scripts/run_all.py --dry-run          # validate config, no model calls
